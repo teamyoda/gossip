@@ -14,7 +14,7 @@ execute(Neighbors, Secret) ->
             New_Secret = process(From, Data),
             execute(Neighbors, New_Secret);
 
-        {add, Neighbor} ->
+        #add_neighbor{neighbor=Neighbor} ->
             io:format("Adding neighbor~n"),
             New_Neighbors = add_neighbor(Neighbor, Neighbors),
             execute(New_Neighbors, Secret);
@@ -43,4 +43,4 @@ start() ->
     io:format("Starting~n"),
     First_PID = spawn(node, execute, [[], 3]),
     Second_PID = spawn(node, execute, [[First_PID], 2]).
-    %%First_PID ! {add, Second_PID}.
+%%    First_PID ! #add_neighbor{neighbor=Second_PID}.
