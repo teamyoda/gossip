@@ -1,5 +1,7 @@
 -module(node).
+-include("include/message.hrl").
 -export([start/0, execute/2]).
+
 
 %% Main execution loop
 execute(Neighbors, Secret) ->
@@ -7,9 +9,9 @@ execute(Neighbors, Secret) ->
 
     send(Neighbors, Secret),
     receive
-        {message, From, To, Data} ->
+        #message{from=From, data=Data} ->
             io:format("Got message~n"),
-            New_Secret = process(From, To, Data),
+            New_Secret = process(From, Data),
             execute(Neighbors, New_Secret);
 
         {add, Neighbor} ->
@@ -23,7 +25,7 @@ execute(Neighbors, Secret) ->
 
     execute(Neighbors, Secret).
 
-process(From, To, Data) ->
+process(From, Data) ->
     io:format("~p: Secret is: ~p~n", [self(), Data]),
     Data.
 
