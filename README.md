@@ -14,5 +14,7 @@ http://learnyousomeerlang.com/designing-a-concurrent-application#lay-them-founda
 This will output the binary to the ebin directory
 
 To use the binary after building run from the project directory
+
     $ erl -pa ebin/
+
 And execute the module as normal.
