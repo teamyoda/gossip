@@ -8,3 +8,7 @@
 
 %% Message to manage neighbors
 -record(add_neighbor, {neighbor}). %% PID of the new neighbor
+
+-record(state, {min, %% Node's current minimum secret
+                max, %% Node's current maximum secret
+                average}). % Node's current avervage secret
