@@ -16,5 +16,7 @@ This will output the binary to the ebin directory
 To use the binary after building run from the project directory
 
     $ erl -pa ebin/
-
-And execute the module as normal.
+    $ node:start(). # This will bring up two nodes (time-being)
+    $ node:poke(). # This is essentially a clock cycle. It prints the current
+                   # status of the calculations and sends the updated values
+                   # to all neighbors.
