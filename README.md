@@ -25,8 +25,8 @@ To use after building run from the project directory
 
 ### Using the Monitor
 
-We now have a monitor psudo-node that allows us to see what a node's status is
-perform general debugging. See ``src/monitor.erl`` for all its exports.
+We now have a monitor pseudo-node that allows us to see what a node's status is
+and perform general debugging. See ``src/monitor.erl`` for all its exports.
 
     $ erl -pa ebin/
 
