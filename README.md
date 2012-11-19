@@ -6,7 +6,7 @@ Gossip implementation for CMSC 621
 We follow a style similar to that shown at 
 http://learnyousomeerlang.com/designing-a-concurrent-application#lay-them-foundations
 
-### Building:
+### Building
 
     $ cd gossip
     $ erl -make
