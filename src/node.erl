@@ -1,6 +1,10 @@
 -module(node).
--export([start/0, poke/0, execute/2]).
+-export([start/0, poke/0, execute/2, start_node/3]).
 -include("include/message.hrl").
+
+%% Public API
+start_node(Min, Max, Average) ->
+    spawn(node, execute, [[], #state{min=Min, max=Max, average=Average}]).
 
 %% Main execution loop
 execute(Neighbors, State = #state{average=Average, min=Min, max=Max}) ->
@@ -27,6 +31,18 @@ execute(Neighbors, State = #state{average=Average, min=Min, max=Max}) ->
             io:format("Adding neighbor~n"),
             New_Neighbors = add_neighbor(Neighbor, Neighbors),
             execute(New_Neighbors, State);
+
+        #request{from=From, field=min} ->
+            From ! State#state.min,
+            execute(Neighbors, State);
+
+        #request{from=From, field=max} ->
+            From ! State#state.max,
+            execute(Neighbors, State);
+
+        #request{from=From, field=average} ->
+            From ! State#state.average,
+            execute(Neighbors, State);
 
         current_state ->
             io:format("State from ~p~nMin: ~p~nMax: ~p~nAve: ~p~n", 
@@ -58,6 +74,7 @@ send([To | Neighbors], State) ->
 add_neighbor(New_Neighbor, Neighbors) ->
     [New_Neighbor|Neighbors].
 
+%% Test code
 poke() ->
     second ! current_state,
     first ! current_state.

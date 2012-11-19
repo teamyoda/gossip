@@ -12,3 +12,5 @@
 -record(state, {min, %% Node's current minimum secret
                 max, %% Node's current maximum secret
                 average}). % Node's current avervage secret
+
+-record(request, {from, field}).
