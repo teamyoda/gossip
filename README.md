@@ -34,14 +34,27 @@ and perform general debugging. See ``src/monitor.erl`` for all its exports.
     ok
     2> Node_1 = node:start_node(1,2,3).
     <0.36.0>
-    3> monitor:get_min(Node_1).
-    {request,monitor,min}
-    Received: 1
-    4> monitor:get_max(Node_1).
-    Received: 2
-    {request,monitor,max}
-    5> monitor:get_average(Node_1).
-    Received: 3
-    {request,monitor,average}
-    6> 
+    3> Node_2 = node:start_node(4,5,6).
+    <0.38.0>
+    4> monitor:make_neighbors(Node_1, Node_2).
+    Adding neighbor
+    Adding neighbor
+    ok
+    5> Network = [Node_1, Node_2].
+    [<0.36.0>,<0.38.0>]
+    6> monitor:step(Network).
+    ok
+    7> monitor:get_min(Node_1).               
+    Received: {message,<0.36.0>,min,1}
+    ok
+    8> monitor:get_min(Node_2).
+    Received: {message,<0.38.0>,min,1}
+    ok
+    9> monitor:get_average(Node_2).
+    Received: {message,<0.38.0>,average,4.5}
+    ok
+    10> monitor:get_average(Node_1).
+    Received: {message,<0.36.0>,average,4.5}
+    ok
+
 
