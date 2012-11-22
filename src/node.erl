@@ -1,5 +1,5 @@
 -module(node).
--export([start/0, poke/0, execute/2, start_node/3]).
+-export([execute/2, start_node/3, send_min/2, send_max/2, send_average/2]).
 -include("include/message.hrl").
 
 %% Public API
@@ -10,81 +10,105 @@ start_node(Min, Max, Average) ->
 execute(Neighbors, State = #state{average=Average, min=Min, max=Max}) ->
     
     receive
+        %% Get a neighbor's min and process it
         #message{function=min, data=Data} ->
             New_Min = min(Min, Data),
             execute(Neighbors, State#state{min=New_Min});
 
+        %% Get a neighbor's max and process it
         #message{function=max, data=Data} ->
             New_Max = max(Max, Data),
             execute(Neighbors, State#state{max=New_Max});
 
+        %% Get a neighbor's average and process it
         #message{function=average, data=Data} ->
             New_Average = average([Average, Data]),
             execute(Neighbors, State#state{average=New_Average});
 
-        #message{from=From, data=Data} ->
-            io:format("Got message~n"),
-            process(From, Data),
-            execute(Neighbors, State);
-
+        %% Get a new neighbor's PID and add it to our list
         #add_neighbor{neighbor=Neighbor} ->
             io:format("Adding neighbor~n"),
             New_Neighbors = add_neighbor(Neighbor, Neighbors),
             execute(New_Neighbors, State);
 
+        %% Get a request for our min and send it to the requestor
         #request{from=From, field=min} ->
-            From ! State#state.min,
+            send_min(From, State),
             execute(Neighbors, State);
 
+        %% Get a request for our max and send it to the requestor
         #request{from=From, field=max} ->
-            From ! State#state.max,
+            send_max(From, State),
             execute(Neighbors, State);
 
+        %% Get a request for our average and send it to the requestor
         #request{from=From, field=average} ->
-            From ! State#state.average,
+            send_average(From, State),
             execute(Neighbors, State);
 
-        current_state ->
-            io:format("State from ~p~nMin: ~p~nMax: ~p~nAve: ~p~n", 
-                [self(), Min, Max, Average]),
-
-            send(Neighbors, State),
+        step ->
+            push(Neighbors, State),
+            pull(Neighbors),
             execute(Neighbors, State);
 
+        %% Shut down the node
         kill ->
-            exit(normal)
+            exit(normal);
+
+        Data ->
+            io:format("Got unknown message (~p):~n~p~n", [self(), Data]),
+            execute(Neighbors, State)
     end.
+
 
 %% Find the average of a list
 average(List) -> lists:sum(List) / length(List).
 
-process(From, Data) ->
-    io:format("From ~p To ~p :: Secret is: ~p~n", [From, self(), Data]),
-    ok.
-
-send([], _) ->
+push([], _) ->
     ok;
 
-send([To | Neighbors], State) ->
-    To ! #message{function=average, from=self(), data=State#state.average},
-    To ! #message{function=min, from=self(), data=State#state.min},
-    To ! #message{function=max, from=self(), data=State#state.max},
-    send(Neighbors, State).
+push([To | Neighbors], State) ->
+    %% Send data to neighbors
+    send_min(To, State),
+    send_max(To, State),
+    send_average(To, State),
+
+    push(Neighbors, State).
+
+send_min(PID, State) ->
+    PID ! #message{function=min, from=self(), data=State#state.min},
+    ok.
+
+send_max(PID, State) ->
+    PID ! #message{function=max, from=self(), data=State#state.max},
+    ok.
+
+send_average(PID, State) ->
+    PID ! #message{function=average, from=self(), data=State#state.average},
+    ok.
+
+pull([]) ->
+    ok;
+
+pull([From | Neighbors]) ->
+    %% Get neighbor's values
+    request_min(From),
+    request_max(From),
+    request_average(From),
+
+    pull(Neighbors).
+
+request_min(PID) ->
+    PID ! #request{from=self(), field=min},
+    ok.
+
+request_max(PID) ->
+    PID ! #request{from=self(), field=max},
+    ok.
+
+request_average(PID) ->
+    PID ! #request{from=self(), field=average},
+    ok.
 
 add_neighbor(New_Neighbor, Neighbors) ->
     [New_Neighbor|Neighbors].
-
-%% Test code
-poke() ->
-    second ! current_state,
-    first ! current_state.
-
-start() -> 
-    io:format("Starting~n"),
-    First_PID = spawn(node, execute, [[], #state{min=5,max=5,average=5}]),
-    Second_PID = spawn(node, execute, [[First_PID], #state{min=2, max=2, average=2}]),
-    register(first, First_PID),
-    register(second, Second_PID),
-
-    first ! #add_neighbor{neighbor=Second_PID}.
-    %%First_PID ! #message{from=Second_PID, function=min, data=5}.
