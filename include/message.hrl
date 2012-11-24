@@ -9,8 +9,13 @@
 %% Message to manage neighbors
 -record(add_neighbor, {neighbor}). %% PID of the new neighbor
 
+-record(fragment, {owner, data}).
+
 -record(state, {min, %% Node's current minimum secret
                 max, %% Node's current maximum secret
-                average}). % Node's current avervage secret
+                average, % Node's current average secret
+                median, % Node's current average secret
+                fragment}). %% Node's current fragment
 
 -record(request, {from, field}).
+
