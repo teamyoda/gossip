@@ -57,4 +57,22 @@ and perform general debugging. See ``src/monitor.erl`` for all its exports.
     Received: {message,<0.36.0>,average,4.5}
     ok
 
+### Initializing nodes with fragments
+The funtion ``node:start_node/1`` allows you to pass in a list of data that
+will be used as a fragment to initialize the node.
+
+    1> Node_1 = node:start_node([4,2,5,3,5,3,5,34,7,21,8,9]).
+
+### Quick network creation
+The ``monitor:create_nodes/1`` function allows you to quickly create a list of
+nodes. All nodes are initialized with a random fragment, so this is more for
+ease of testing than anything.
+
+    1> monitor:start().
+    ok
+    2> Nodes = monitor:create_nodes(5). # Returns a list of nodes
+                                        # Nodes are pre-initialized with some
+                                        # random fragments
+
+    3> # Can now set up neighbors, step, and query as above
 
