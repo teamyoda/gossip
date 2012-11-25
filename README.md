@@ -76,3 +76,24 @@ ease of testing than anything.
 
     3> # Can now set up neighbors, step, and query as above
 
+### Spawning Remote Nodes
+Additional setup to your environment is required before you can spawn nodes on a remote system. First create 2 VMs as described in project 1. Add these lines to the /etc/hosts file in both VMs:
+
+    192.168.0.101	vm1
+    192.168.0.102	vm2
+
+Make sure to download and build this code on both VMs. The rest of the setup is similar to this tutorial: http://learnyousomeerlang.com/distribunomicon
+
+When starting the erlang shell on each vm you need to add additional tags. Start erlang on vm1 like this:
+
+    erl -pa ebin/ -sname master@vm1 -setcookie sync
+
+and on vm2 like this:
+
+    erl -pa ebin/ -sname slave@vm2 -setcookie sync
+
+Finally, before doing anything else, run this command on vm1 in the erlang shell:
+
+    1> net_kernel:connect(slave@vm2).
+
+If it returns true then you are good to go. Run all commands from within the erlang shell on vm1. Now you can run ``node:start_remote_node/3`` to spawn a node that runs on vm2. Notice that it will have a non-zero value for the first part of it's PID, indicating it is running remotely. You can interact with it exactly as you would a local node.

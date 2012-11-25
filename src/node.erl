@@ -1,5 +1,5 @@
 -module(node).
--export([execute/2, start_node/3, start_node/1, send_min/2, send_max/2, send_average/2, median/1, forward_fragment/2]).
+-export([execute/2, start_node/3, start_remote_node/3, start_node/1, send_min/2, send_max/2, send_average/2, median/1, forward_fragment/2]).
 -include("include/message.hrl").
 
 %% Public API
@@ -13,6 +13,10 @@ start_node(Fragment) when is_list(Fragment) ->
 %% Start a new node with a min, max, and average
 start_node(Min, Max, Average) ->
     spawn(node, execute, [[], #state{min=Min, max=Max, average=Average}]).
+
+%% Start a new node on the remote system
+start_remote_node(Min, Max, Average) ->
+    spawn(slave@vm2, node, execute, [[], #state{min=Min, max=Max, average=Average}]).
 
 %% Main execution loop
 execute(Neighbors, State) ->
