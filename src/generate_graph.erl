@@ -3,7 +3,6 @@
 -export([calc_nodes_in_tree/1]).
 -export([calc_nodes_in_level/1]).
 -export([build_graph/1]).
--export([generate_graph/1]).
 
 showValues( Values ) ->
         lists:foreach(
@@ -11,18 +10,11 @@ showValues( Values ) ->
                 Values
         ).
 
-add_node(0, T) -> T;
-add_node(N, T) when N > 0 -> add_node(N-1, gb_trees:enter(N, N, T)).
+list_length([]) ->
+    0;  
+list_length([First | Rest]) ->
+    1 + list_length(Rest).
 
-iterate_tree(It) ->
-    Item = gb_trees:next(It),
-    if Item /= none ->
-        {Key, Value, It1} = Item,
-        %io:format("Item ~w\n", [Key]),
-        iterate_tree(It1);
-    true -> ok
-    end
-.
  
 ceiling(X) ->
     T = erlang:trunc(X),
@@ -65,26 +57,59 @@ fill_source_queue(Queue, MaxCount) ->
 build(Digraph, SourceQueue, WorkQueue, Level, Count, MaxLevel) when Count == -1 ->
     %io:format("first case \n"),
     % pop node of source queue 
-    % make fist node
-    build(Digraph, SourceQueue, WorkQueue, Level, 1, MaxLevel);
+    % put node in work queue
+    {Node, NewSourceQueue} = queue:out(SourceQueue),
+    NodeNumber = element(2, Node),
+    digraph:add_vertex(Digraph, NodeNumber),
+    io:format("Check 1st node ~w\n", [digraph:vertex(Digraph, NodeNumber)]),
+    NewWorkQueue = queue:in(NodeNumber, WorkQueue),
+    build(Digraph, NewSourceQueue, NewWorkQueue, Level, 1, MaxLevel);
 build(Digraph, SourceQueue, WorkQueue, Level, Count, MaxLevel) when Level == MaxLevel ->
     % return digraph here
     io:format("terminal case \n"),
     Digraph;
 build(Digraph, SourceQueue, WorkQueue, Level, Count, MaxLevel) ->
-    %io:format("Current level ~w, current count ~w, max level ~w \n", [Level,Count, MaxLevel]),
+    io:format("Current level ~w, current count ~w, max level ~w \n", [Level,Count, MaxLevel]),
+    io:format("Work queue begin ~w \n", [WorkQueue]),
     % create root node
     %
     if 
         Count > 0 ->
-            % pop node off source queue
-            % link node to head of work queue
-            % pop node off source queue
-            % link node to head of work queue
+            HeadNodeNum = element(2, queue:peek(WorkQueue)),
+            HeadNode = digraph:vertex(Digraph, HeadNodeNum),
 
+            io:format("Head node ~w\n", [HeadNode]),
+            io:format("Work queue before ~w \n", [WorkQueue]),
+
+            % pop node off source queue
+            % put node at tail of work queue
+            % link node to head of work queue
+            {LeftNode, NewSourceQueue1} = queue:out(SourceQueue),
+            LeftNodeNum = element(2, LeftNode),
+            NewWorkQueue1 = queue:in(LeftNodeNum, WorkQueue),
+            digraph:add_vertex(Digraph, LeftNodeNum),
+            digraph:add_edge(Digraph, HeadNodeNum, LeftNodeNum),
+            digraph:add_edge(Digraph, LeftNodeNum, HeadNodeNum),
+
+            io:format("Work queue add left ~w \n", [NewWorkQueue1]),
+
+            % pop node off source queue
+            % link node to head of work queue
+            {RightNode, NewSourceQueue2} = queue:out(NewSourceQueue1),
+            RightNodeNum = element(2, RightNode),
+            NewWorkQueue2 = queue:in(RightNodeNum, NewWorkQueue1),
+            digraph:add_vertex(Digraph, RightNodeNum),
+            digraph:add_edge(Digraph, HeadNodeNum, RightNodeNum),
+            digraph:add_edge(Digraph, RightNodeNum, HeadNodeNum),
+
+            io:format("Work queue add right ~w \n", [NewWorkQueue2]),
             % pop node off work queue
+            {OldHead, NewWorkQueue3} = queue:out(NewWorkQueue2),
+
+            io:format("Work queue removed head ~w \n", [NewWorkQueue3]),
             % recursive call with decremented count
-            build(Digraph, SourceQueue, WorkQueue, Level, Count - 1, MaxLevel);
+            build(Digraph, NewSourceQueue2, NewWorkQueue3, Level, Count - 1, MaxLevel);
+
         Count == 0 ->
             % increase level
             % set count to number of nodes in next level
@@ -103,25 +128,10 @@ build_graph(NumNodes) ->
     QueueNew = fill_source_queue(Queue, NumNodesOptimal),
     %io:format("Queue ~w\n", [QueueNew]),
     FinalDigraph = build(Digraph, QueueNew, Queue, 0, -1, Depth),
-    io:format("Final graph ~w\n", [FinalDigraph]),
+    %io:format("Final graph ~w\n", [FinalDigraph]),
+    io:format("Print verteces:\n"),
+    showValues(digraph:vertices(FinalDigraph)),
+    io:format("Print edges:\n"),
+    showValues(digraph:edges(FinalDigraph)),
    ok. 
-
-print_tree(Tree) ->
-    Values = gb_trees:values(Tree),
-    showValues(Values),
-    It = gb_trees:iterator(Tree),
-    iterate_tree(It)
-.
-
-generate_graph(NumNodesRequested) ->
-    Tree = gb_trees:empty(),
-    NumNodes = trunc(math:pow(2,calc_optimal_depth(NumNodesRequested)+1) - 1),
-    io:format("Number of nodes ~w\n", [NumNodes]),
-    FinalTree = add_node(NumNodes, Tree),
-    print_tree(FinalTree),
-    gb_trees:to_list(FinalTree).
-    %Values = gb_trees:values(FinalTree),
-    %showValues(Values),
-    %It = gb_trees:iterator(FinalTree),
-    %iterate_tree(It).
 
