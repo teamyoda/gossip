@@ -11,11 +11,11 @@
 
 -record(fragment, {owner, data}).
 
--record(state, {min, %% Node's current minimum secret
-                max, %% Node's current maximum secret
-                average, % Node's current average secret
-                median, % Node's current average secret
-                fragment}). %% Node's current fragment
+-record(state, {min=0, %% Node's current minimum secret
+                max=0, %% Node's current maximum secret
+                average=0, % Node's current average secret
+                median=0, % Node's current average secret
+                fragment=[]}). %% Node's current fragment
 
 -record(request, {from, field}).
 
