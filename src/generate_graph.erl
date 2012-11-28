@@ -1,4 +1,11 @@
+%%
+% @author Stanislav Bobovych
+% @file generate_graph.erl
+%
+%
+%%
 -module(generate_graph).
+
 % @function calc_nodes 
 % @details used to calculate number of nodes that will be used in the network.
 % @param ballpark number of desired nodes
@@ -9,6 +16,20 @@
 % @param actual number of nodes in the network, should be the output of calc_nodes
 % @return digraph of network
 -export([build_graph/1]).
+% @function print_graph
+% @details helper function to print a graph
+% @param graph
+-export([print_graph/1]).
+% @function get_neghbors
+% @details helper function that returns the out neighbours of a Node
+% @param1 graph
+% @param2 node (ex. 5)
+-export([get_neighbors/2]).
+% @function test_build_graph
+% @details a simple example of how to use this library
+-export([test_build_graph/0]).
+
+%TODO add function to calculate a histogram of node degrees for analysis
 
 showValues( Values ) ->
         lists:foreach(
@@ -21,6 +42,9 @@ print_graph(Graph) ->
             io:format("Node ~w points to ~w \n", [I, digraph:out_neighbours(Graph, I)])
             end, digraph:vertices(Graph)
         ).
+
+get_neighbors(Graph, Node) ->
+    digraph:out_neighbours(Graph, Node).
 
 list_length([]) ->
     0;  
@@ -76,15 +100,43 @@ fill_source_queue(Queue, Offset, MaxCount) ->
         QueueLength == MaxCount -> Queue
     end.
 
+get_leafs(Graph, InQueue, OutQueue) ->
+    QueueEmpty = queue:is_empty(InQueue),
+    if
+        QueueEmpty == true ->
+            OutQueue;
+        true -> 
+            Neighbours = list_length(digraph:out_neighbours(Graph, element(2, queue:peek(InQueue)))),
+            if
+                Neighbours > 1 ->
+                    {Node, NewInQueue} = queue:out(InQueue),
+                    get_leafs(Graph, NewInQueue, OutQueue);
+                Neighbours == 1 ->
+                    {Node, NewInQueue} = queue:out(InQueue),
+                    NewOutQueue = queue:in(element(2, Node), OutQueue),
+                    get_leafs(Graph, NewInQueue, NewOutQueue)
+            end
+    end.
+            
+    
+    
 relink(Graph, Vertex, Vertices) ->
     lists:foreach( fun(Node) ->
                 digraph:add_edge(Graph, Node, Vertex)
                 end, Vertices).
  
 join_bigraphs(Left, Right) ->
-    Offset = lists:max(digraph:vertices(Left)),
-    Depth = calc_optimal_depth(Offset),
-    io:format("Depth is ~w\n", [Depth]),
+    NumNodes = list_length(digraph:vertices(Left)),
+    Depth = calc_optimal_depth(NumNodes),
+    %io:format("Depth is ~w\n", [Depth]),
+    % save leaf nodes to lists
+    LeftLeafList = queue:to_list(get_leafs(Left, queue:from_list(digraph:vertices(Left)), queue:new())),
+    RightLeafList = queue:to_list(get_leafs(Right, queue:from_list(digraph:vertices(Right)), queue:new())),
+    %io:format("LeftLeafList :\n"),
+    %showValues(LeftLeafList),
+    %io:format("RightLeafList :\n"),
+    %showValues(RightLeafList),
+
     % add all entries in right digraph to the left one
     lists:foreach( fun(Node) ->
                 digraph:add_vertex(Left, Node) end, digraph:vertices(Right)),
@@ -92,12 +144,6 @@ join_bigraphs(Left, Right) ->
                 relink(Left, Node, digraph:out_neighbours(Right, Node)) end, digraph:vertices(Right)),
 
     % link the leaf nodes
-    LeftLeafList = queue:to_list(fill_source_queue(queue:new(), trunc(math:pow(2, Depth) - 1), calc_nodes_in_level(Depth))),
-    RightLeafList = queue:to_list(fill_source_queue(queue:new(), trunc(math:pow(2, Depth) - 1) + Offset, calc_nodes_in_level(Depth))),
-    %io:format("LeftLeafList :\n"),
-    %showValues(LeftLeafList),
-    %io:format("RightLeafList :\n"),
-    %showValues(RightLeafList),
     LeafList = lists:zip(LeftLeafList, RightLeafList),
     %io:format("LeafList:\n"),
     %showValues(LeafList),
@@ -167,18 +213,23 @@ build_bigraph(Digraph, SourceQueue, WorkQueue, Level, Count, MaxLevel) ->
     end.
     
 
-build_graph(NumNodes) ->
+build_graph(PidList) ->
+    NumNodes = list_length(PidList),
     Depth = calc_optimal_depth(trunc(NumNodes/2)),
-    QueueLeft = fill_source_queue(queue:new(), 0, NumNodes),
+    {ListLeft, ListRight} = lists:split(trunc(list_length(PidList)/2), PidList),
+    QueueLeft = queue:from_list(ListLeft),
+    QueueRight = queue:from_list(ListRight),
     %io:format("Queue ~w\n", [QueueLeft]),
     DigraphLeft = build_bigraph(digraph:new(), QueueLeft, queue:new(), 0, -1, Depth),
-    print_graph(DigraphLeft),
-    io:format("Final node: ~w\n", [lists:max(digraph:vertices(DigraphLeft))]),
-    QueueRight = fill_source_queue(queue:new(), lists:max(digraph:vertices(DigraphLeft)), NumNodes),
+    %print_graph(DigraphLeft),
     DigraphRight = build_bigraph(digraph:new(), QueueRight, queue:new(), 0, -1, Depth),
-    print_graph(DigraphRight),
-    io:format("Final node: ~w\n", [lists:max(digraph:vertices(DigraphRight))]),
+    %print_graph(DigraphRight),
     FinalDigraph = join_bigraphs(DigraphLeft, DigraphRight),
-    print_graph(FinalDigraph),
+    %print_graph(FinalDigraph),
     FinalDigraph.
+
+test_build_graph() ->
+    NodePidList = [111, 222, 333, 444, 555, 666, 777, 161, 171, 181, 191, 200, 210, 220],
+    Network = build_graph(NodePidList),
+    print_graph(Network).
 
