@@ -20,7 +20,7 @@
 % @details helper function to print a graph
 % @param graph
 -export([print_graph/1]).
-% @function get_neghbors
+% @function get_neighbors
 % @details helper function that returns the out neighbours of a Node
 % @param1 graph
 % @param2 node (ex. 5)
@@ -231,5 +231,6 @@ build_graph(PidList) ->
 test_build_graph() ->
     NodePidList = [111, 222, 333, 444, 555, 666, 777, 161, 171, 181, 191, 200, 210, 220],
     Network = build_graph(NodePidList),
-    print_graph(Network).
+    print_graph(Network),
+    io:format("Neighbors of 171: ~w\n", [get_neighbors(Network,171)]).
 
