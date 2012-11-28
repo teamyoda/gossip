@@ -1,13 +1,25 @@
 -module(generate_graph).
--export([calc_optimal_depth/1]).
--export([calc_nodes_in_tree/1]).
--export([calc_nodes_in_level/1]).
+% @function calc_nodes 
+% @details used to calculate number of nodes that will be used in the network.
+% @param ballpark number of desired nodes
+% @return number of nodes to be used in the network
+-export([calc_nodes/1]).
+% @function build_graph
+% @details this will build the network 
+% @param actual number of nodes in the network, should be the output of calc_nodes
+% @return digraph of network
 -export([build_graph/1]).
 
 showValues( Values ) ->
         lists:foreach(
                 fun(I)-> io:format("~w\n", [I]) end,
                 Values
+        ).
+
+print_graph(Graph) ->
+    lists:foreach( fun(I) ->
+            io:format("Node ~w points to ~w \n", [I, digraph:out_neighbours(Graph, I)])
+            end, digraph:vertices(Graph)
         ).
 
 list_length([]) ->
@@ -33,7 +45,18 @@ calc_nodes_in_tree(Depth) ->
 calc_nodes_in_level(Level) ->
     ceiling(math:pow(2, Level)).
 
+calc_nodes(NumNodes) ->
+    Depth = calc_optimal_depth(trunc(NumNodes/2)),
+    %io:format("Depth ~w\n", [Depth]),
+    NumNodesOptimal = calc_nodes_in_tree(Depth),
+    %io:format("NumNodes in one tree ~w\n", [NumNodesOptimal]),
+    NumNodesOptimal * 2.
+
 fill_source_queue(Queue, Offset, MaxCount) ->
+    % possible better implementation
+    %TempList = list:seq(1 + Offset, MaxCount),
+    %queue:from_list(TempList).
+
     QueueLength = queue:len(Queue),
     %io:format("Length ~w\n", [QueueLength]),
     %io:format("MaxCount ~w\n", [MaxCount]),
@@ -53,8 +76,36 @@ fill_source_queue(Queue, Offset, MaxCount) ->
         QueueLength == MaxCount -> Queue
     end.
 
+relink(Graph, Vertex, Vertices) ->
+    lists:foreach( fun(Node) ->
+                digraph:add_edge(Graph, Node, Vertex)
+                end, Vertices).
+ 
 join_bigraphs(Left, Right) ->
-    ok.
+    Offset = lists:max(digraph:vertices(Left)),
+    Depth = calc_optimal_depth(Offset),
+    io:format("Depth is ~w\n", [Depth]),
+    % add all entries in right digraph to the left one
+    lists:foreach( fun(Node) ->
+                digraph:add_vertex(Left, Node) end, digraph:vertices(Right)),
+    lists:foreach( fun(Node) ->
+                relink(Left, Node, digraph:out_neighbours(Right, Node)) end, digraph:vertices(Right)),
+
+    % link the leaf nodes
+    LeftLeafList = queue:to_list(fill_source_queue(queue:new(), trunc(math:pow(2, Depth) - 1), calc_nodes_in_level(Depth))),
+    RightLeafList = queue:to_list(fill_source_queue(queue:new(), trunc(math:pow(2, Depth) - 1) + Offset, calc_nodes_in_level(Depth))),
+    %io:format("LeftLeafList :\n"),
+    %showValues(LeftLeafList),
+    %io:format("RightLeafList :\n"),
+    %showValues(RightLeafList),
+    LeafList = lists:zip(LeftLeafList, RightLeafList),
+    %io:format("LeafList:\n"),
+    %showValues(LeafList),
+    lists:foreach( fun(Nodes) ->
+                digraph:add_edge(Left, element(1, Nodes), element(2, Nodes)),
+                digraph:add_edge(Left, element(2, Nodes), element(1, Nodes))
+                end, LeafList),
+    Left.
 
 build_bigraph(Digraph, SourceQueue, WorkQueue, Level, Count, MaxLevel) when Count == -1 ->
     % pop node of source queue 
@@ -117,26 +168,17 @@ build_bigraph(Digraph, SourceQueue, WorkQueue, Level, Count, MaxLevel) ->
     
 
 build_graph(NumNodes) ->
-    Depth = calc_optimal_depth(NumNodes),
-    %io:format("Depth ~w\n", [Depth]),
-    NumNodesOptimal = calc_nodes_in_tree(Depth),
-    %io:format("NumNodes ~w\n", [NumNodesOptimal]),
-    QueueLeft = fill_source_queue(queue:new(), 0, NumNodesOptimal),
+    Depth = calc_optimal_depth(trunc(NumNodes/2)),
+    QueueLeft = fill_source_queue(queue:new(), 0, NumNodes),
     %io:format("Queue ~w\n", [QueueLeft]),
     DigraphLeft = build_bigraph(digraph:new(), QueueLeft, queue:new(), 0, -1, Depth),
-    %io:format("Final graph ~w\n", [DigraphLeft]),
-    io:format("Print verteces:\n"),
-    showValues(digraph:vertices(DigraphLeft)),
-    io:format("Print edges:\n"),
-    showValues(digraph:edges(DigraphLeft)),
+    print_graph(DigraphLeft),
     io:format("Final node: ~w\n", [lists:max(digraph:vertices(DigraphLeft))]),
-    QueueRight = fill_source_queue(queue:new(), lists:max(digraph:vertices(DigraphLeft)), NumNodesOptimal),
+    QueueRight = fill_source_queue(queue:new(), lists:max(digraph:vertices(DigraphLeft)), NumNodes),
     DigraphRight = build_bigraph(digraph:new(), QueueRight, queue:new(), 0, -1, Depth),
-    io:format("Print verteces:\n"),
-    showValues(digraph:vertices(DigraphRight)),
-    io:format("Print edges:\n"),
-    showValues(digraph:edges(DigraphRight)),
+    print_graph(DigraphRight),
     io:format("Final node: ~w\n", [lists:max(digraph:vertices(DigraphRight))]),
     FinalDigraph = join_bigraphs(DigraphLeft, DigraphRight),
-   ok. 
+    print_graph(FinalDigraph),
+    FinalDigraph.
 
