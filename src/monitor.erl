@@ -1,6 +1,6 @@
 -module(monitor).
 -export([start/0, execute/0, get_min/1, get_max/1, get_average/1, 
-        make_neighbors/2, step/1, create_nodes/1, get_median/1, get_fragment/1]).
+        make_neighbors/2, step/1, create_nodes/1, get_median/1, get_fragments/1]).
 -include("include/message.hrl").
 
 %% Monitor for checking the status of any gossip node
@@ -30,8 +30,8 @@ get_average(To_PID) ->
     To_PID ! #request{from=monitor, field=average},
     ok.
 
-get_fragment(To_PID) ->
-    To_PID ! #request{from=monitor, field=fragment},
+get_fragments(To_PID) ->
+    To_PID ! #request{from=monitor, field=fragments},
     ok.
 
 make_neighbors(PID_1, PID_2) ->
