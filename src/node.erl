@@ -86,6 +86,7 @@ execute(Neighbors, State) ->
                 Owner == self() ->
                     %% We own this fragment
                     TempState = process_fragment(Frag, State),
+                    replicate_fragment(Neighbors, Frag),
                     store_fragment(Frag, TempState);
                  IsNeighbors ->
                     %% We store a copy of this fragment
@@ -112,11 +113,18 @@ execute(Neighbors, State) ->
             end,
             execute(Neighbors, NewState);
 
+        %% If we get a fragment marked "replicate", just store it
+        Frag = #fragment{method=replicate} ->
+            NewState = store_fragment(Frag, State),
+            execute(Neighbors, NewState);
+
         %% Get a new neighbor's PID and add it to our list
+        %% Replicate our fragment to the new neighbor
         #add_neighbor{neighbor=Neighbor} ->
             io:format("Adding neighbor~n"),
-            New_Neighbors = add_neighbor(Neighbor, Neighbors),
-            execute(New_Neighbors, State);
+            NewNeighbors = add_neighbor(Neighbor, Neighbors),
+            replicate_fragment(NewNeighbors, Fragment),
+            execute(NewNeighbors, State);
 
         %% Get a request for our min and send it to the requestor
         #request{from=From, field=min} ->
@@ -146,8 +154,6 @@ execute(Neighbors, State) ->
         step ->
             push(Neighbors, State),
             pull(Neighbors),
-            Frag = State#state.fragment,
-            send_fragment(Neighbors, Frag#fragment{owner=self(), sender=self(), method=store}),
             execute(Neighbors, State);
 
         %% Shut down the node
@@ -183,6 +189,11 @@ send_fragment([], _) -> ok;
 send_fragment([To | PIDS], Fragment) ->
     To ! Fragment#fragment{sender=self()},
     send_fragment(PIDS, Fragment).
+
+replicate_fragment([], _) -> ok;
+replicate_fragment([To | Rest], Fragment) ->
+    To ! Fragment#fragment{owner=self(), sender=self(), method=replicate},
+    replicate_fragment(Rest, Fragment).
 
 %% Find the median of a list
 median(List) ->
