@@ -70,11 +70,15 @@ ease of testing than anything.
 
     1> monitor:start().
     ok
-    2> Nodes = monitor:create_nodes(5). # Returns a list of nodes
+    2> Nodes = monitor:create_nodes(14). # Returns a list of nodes
                                         # Nodes are pre-initialized with some
                                         # random fragments
+                                        # only works for certain numbers of nodes...
 
-    3> # Can now set up neighbors, step, and query as above
+    3> # Can now set up graph and neighbors
+    4> Graph1 = generate_graph:build_graph(Nodes). # Returns a digraph of the nodes
+    5> monitor:make_neighbors_graph(Graph1,Nodes). # Assigns neighbors to all nodes based on the graph
+    6> # Can now step through network and monitor nodes attributes
 
 ### Spawning Remote Nodes
 Additional setup to your environment is required before you can spawn nodes on a remote system. First create 2 VMs as described in project 1. Add these lines to the /etc/hosts file in both VMs:
