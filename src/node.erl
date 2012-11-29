@@ -80,14 +80,14 @@ execute(Neighbors, State) ->
         %% forward to our neighbors. If it does not belong to us and we
         %% don't hold a copy of it, just forward the fragment to our neighbors.
         Frag = #fragment{owner=Owner, sender=Sender, method=store} ->
-            Entry = lists:keyfind(Owner, #fragment.owner, FragmentList),
+            IsNeighbors = lists:member(Owner, Neighbors),
             NewState = 
             if 
                 Owner == self() ->
                     %% We own this fragment
                     TempState = process_fragment(Frag, State),
                     store_fragment(Frag, TempState);
-                Entry /= false ->
+                 IsNeighbors ->
                     %% We store a copy of this fragment
                     send_fragment(Neighbors -- [Sender], Frag),
                     store_fragment(Frag, State);
