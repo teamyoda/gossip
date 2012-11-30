@@ -1,7 +1,9 @@
 -module(monitor).
 -export([start/0, execute/0, get_min/1, get_max/1, get_average/1, 
         make_neighbors/2, make_neighbors_multiple/2, make_neighbors_graph/2, 
-        step/1, create_nodes/1, get_median/1, get_fragments/1]).
+        step/1, create_nodes/1, get_median/1, get_fragments/1, 
+        store_fragment/3, request_fragment/2, query_node_one/1, step/2,
+        create_network/1]).
 -include("include/message.hrl").
 
 %% Monitor for checking the status of any gossip node
@@ -33,6 +35,23 @@ get_average(To_PID) ->
 
 get_fragments(To_PID) ->
     To_PID ! #request{from=monitor, field=fragments},
+    ok.
+
+store_fragment(Number, Data, Nodes) when is_list(Nodes) ->
+    DestNode = lists:nth(Number, Nodes),
+    Node_1 = lists:nth(1, Nodes),
+    Node_1 ! #fragment{owner=DestNode, sender=Node_1, data=Data, method=store},
+    ok.
+
+request_fragment(Number, Nodes) when is_list(Nodes) ->
+    Node = lists:nth(Number, Nodes),
+    Node_1 = lists:nth(1, Nodes),
+    Node_1 ! #fragment{owner=Node, sender=Node_1, replyto=Node_1, method=request},
+    ok.
+
+query_node_one(Nodes) when is_list(Nodes) ->
+    Node_1 = lists:nth(1, Nodes),
+    get_fragments(Node_1),
     ok.
 
 %% Makes nodes into  neighbors
@@ -76,12 +95,25 @@ create_nodes_helper(Number, Nodes) ->
     PID = node:start_node(Fragment),
     create_nodes_helper(Number-1, [PID|Nodes]).
 
+create_network(Size) ->
+    Number = generate_graph:calc_nodes(Size),
+    Nodes = create_nodes(Number),
+    Graph = generate_graph:build_graph(Nodes),
+    make_neighbors_graph(Graph, Nodes),
+    Nodes.
+
 step([]) ->
     ok;
 
 step([Head | Rest]) ->
     Head ! step,
     step(Rest).
+
+step(_, 0) -> ok;
+step(Nodes, Number) ->
+    timer:sleep(1),
+    step(Nodes),
+    step(Nodes, Number - 1).
 
 execute() ->
     receive
