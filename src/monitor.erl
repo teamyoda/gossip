@@ -2,6 +2,7 @@
 -export([start/0, execute/0, get_min/1, get_max/1, get_average/1, 
         make_neighbors/2, make_neighbors_multiple/2, make_neighbors_graph/2, 
         step/1, create_nodes/1, get_median/1, get_fragments/1]).
+-export([read_fragment_file/2]).
 -include("include/message.hrl").
 
 %% Monitor for checking the status of any gossip node
@@ -58,6 +59,19 @@ make_neighbors_graph(Graph, [Head | Rest]) ->
     make_neighbors_multiple(Head, Neighbors),
     make_neighbors_graph(Graph, Rest).
 
+read_fragment_file(Fname, Number) ->
+    case file:open(Fname, [read, raw, binary]) of
+ {ok, Fd} ->
+     case file:read(Fd, Number) of 
+        {ok, Data} ->
+            file:close(Fd),
+            Data;
+        {error, Reason} ->
+            {error, Reason}
+        end;
+ {error, Reason} ->
+     {error, Reason}
+    end.
 
 generate_fragment() ->
     generate_fragment_helper(20, []).
