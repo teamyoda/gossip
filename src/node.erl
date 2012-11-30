@@ -59,73 +59,7 @@ execute(Neighbors, State) ->
         #message{function=median, data=Data} ->
             New_Median = median([Median, Data]),
             execute(Neighbors, State#state{median=New_Median});
-
-        %% If we have a copy of the fragment, send it back. Otherwise, forward
-        %% the request to all neighbors except the sender.
-        Frag = #fragment{owner=Owner, sender=Sender, replyto=FinalDest, method=request} ->
-            Entry = lists:keyfind(Owner, #fragment.owner, FragmentList),
-            io:format("Entry result on request is: ~p~n", [Entry]),
-            if 
-                Entry /= false ->
-                    io:format("Attempting to send fragment response~n"),
-                    send_fragment([Sender], Entry#fragment{replyto=FinalDest, method=reply});
-                true ->
-                    io:format("Forwarding response to neighbors~n"),
-                    send_fragment(Neighbors -- [Sender], Frag)
-            end,
-            execute(Neighbors, State);
-
-        %% If we get a fragment to store, check if it belongs to us and
-        %% process it if so. If we hold a copy of it, update our copy and
-        %% forward to our neighbors. If it does not belong to us and we
-        %% don't hold a copy of it, just forward the fragment to our neighbors.
-        Frag = #fragment{owner=Owner, sender=Sender, method=store} ->
-            IsNeighbors = lists:member(Owner, Neighbors),
-            NewState = 
-            if 
-                Owner == self() ->
-                    %% We own this fragment
-                    TempState = process_fragment(Frag, State),
-                    replicate_fragment(Neighbors, Frag),
-                    store_fragment(Frag, TempState);
-                 IsNeighbors ->
-                    %% We store a copy of this fragment
-                    send_fragment(Neighbors -- [Sender], Frag),
-                    store_fragment(Frag, State);
-                true ->
-                    %% We just need to pass the fragment on
-                    send_fragment(Neighbors -- [Sender], Frag),
-                    State
-            end,
-            execute(Neighbors, NewState);
-
-        %% If we get a fragment with the method set to reply, then it is in
-        %% reply to a request we issued. Store it locally.
-        Frag = #fragment{sender=Sender, replyto=FinalDest, method=reply} ->
-            io:format("Node ~p got reply ~p", [self(), Frag]),
-            NewState = 
-            if
-                FinalDest == self() ->
-                    store_fragment(Frag, State);
-                true ->
-                    send_fragment(Neighbors -- [Sender], Frag),
-                    State
-            end,
-            execute(Neighbors, NewState);
-
-        %% If we get a fragment marked "replicate", just store it
-        Frag = #fragment{method=replicate} ->
-            NewState = store_fragment(Frag, State),
-            execute(Neighbors, NewState);
-
-        %% Get a new neighbor's PID and add it to our list
-        %% Replicate our fragment to the new neighbor
-        #add_neighbor{neighbor=Neighbor} ->
-            io:format("Adding neighbor~n"),
-            NewNeighbors = add_neighbor(Neighbor, Neighbors),
-            replicate_fragment(NewNeighbors, Fragment),
-            execute(NewNeighbors, State);
-
+        
         %% Get a request for our min and send it to the requestor
         #request{from=From, field=min} ->
             send_min(From, State),
@@ -150,7 +84,68 @@ execute(Neighbors, State) ->
             From ! FragmentList,
             execute(Neighbors, State);
 
-        %% Step the node
+        %% If we have a copy of the fragment, send it back. Otherwise, forward
+        %% the request to all neighbors except the sender.
+        Frag = #fragment{owner=Owner, sender=Sender, replyto=FinalDest, method=request} ->
+            Entry = lists:keyfind(Owner, #fragment.owner, FragmentList),
+            if 
+                Entry /= false ->
+                    send_fragment([Sender], Entry#fragment{replyto=FinalDest, method=reply});
+                true ->
+                    send_fragment(Neighbors -- [Sender], Frag)
+            end,
+            execute(Neighbors, State);
+
+        %% If we get a fragment to store, check if it belongs to us and
+        %% process it if so. If we hold a copy of it, update our copy and
+        %% forward to our neighbors. If it does not belong to us and we
+        %% don't hold a copy of it, just forward the fragment to our neighbors.
+        Frag = #fragment{owner=Owner, sender=Sender, method=store} ->
+            IsNeighbors = lists:member(Owner, Neighbors),
+            NewState = 
+            if 
+                Owner == self() ->
+                    %% We own this fragment
+                    TempState = process_fragment(Frag, State),
+                    replicate_fragment(Neighbors, Frag),
+                    store_fragment(Frag, TempState);
+                IsNeighbors ->
+                    %% We store a copy of this fragment
+                    send_fragment(Neighbors -- [Sender], Frag),
+                    store_fragment(Frag, State);
+                true ->
+                    %% We just need to pass the fragment on
+                    send_fragment(Neighbors -- [Sender], Frag),
+                    State
+            end,
+            execute(Neighbors, NewState);
+
+        %% If we get a fragment with the method set to reply, then it is in
+        %% reply to a request we issued. Store it locally.
+        Frag = #fragment{sender=Sender, replyto=FinalDest, method=reply} ->
+            NewState = 
+            if
+                FinalDest == self() ->
+                    store_fragment(Frag, State);
+                true ->
+                    send_fragment(Neighbors -- [Sender], Frag),
+                    State
+            end,
+            execute(Neighbors, NewState);
+
+        %% If we get a fragment marked "replicate", just store it
+        Frag = #fragment{method=replicate} ->
+            NewState = store_fragment(Frag, State),
+            execute(Neighbors, NewState);
+
+        %% Get a new neighbor's PID and add it to our list
+        %% Replicate our fragment to the new neighbor
+        #add_neighbor{neighbor=NewNeighbor} ->
+            NewNeighbors = add_neighbor(NewNeighbor, Neighbors),
+            replicate_fragment(NewNeighbors, Fragment),
+            execute(NewNeighbors, State);
+
+        
         step ->
             push(Neighbors, State),
             pull(Neighbors),
@@ -161,8 +156,8 @@ execute(Neighbors, State) ->
             exit(normal);
 
         %% Catchall to just print any wierd messages and continue
-        Data ->
-            io:format("Got unknown message (~p):~n~p~n", [self(), Data]),
+        Unknown ->
+            io:format("Got unknown message (~p):~n~p~n", [self(), Unknown]),
             execute(Neighbors, State)
     end.
 
@@ -185,10 +180,10 @@ store_fragment(Fragment, State) when is_record(Fragment, fragment) and is_record
 
     State#state{fragment_list=FragmentList}.
 
-send_fragment([], _) -> ok;
-send_fragment([To | PIDS], Fragment) ->
+send_fragment(Neighbors, Fragment) ->
+    To = pick_dest(Neighbors),
     To ! Fragment#fragment{sender=self()},
-    send_fragment(PIDS, Fragment).
+    ok.
 
 replicate_fragment([], _) -> ok;
 replicate_fragment([To | Rest], Fragment) ->
@@ -210,17 +205,14 @@ median(List) ->
 %% Find the average of a list
 average(List) -> lists:sum(List) / length(List).
 
-push([], _) ->
-    ok;
-
-push([To | Neighbors], State) ->
+push(Neighbors, State) ->
     %% Send data to neighbors
+    To = pick_dest(Neighbors),
     send_min(To, State),
     send_max(To, State),
     send_average(To, State),
     send_median(To, State),
-
-    push(Neighbors, State).
+    ok.
 
 send_min(PID, State) ->
     PID ! #message{function=min, from=self(), data=State#state.min},
@@ -238,16 +230,14 @@ send_median(PID, State) ->
     PID ! #message{function=median, from=self(), data=State#state.median},
     ok.
 
-pull([]) ->
-    ok;
-
-pull([From | Neighbors]) ->
+pull(Neighbors) ->
     %% Get neighbor's values
+    From = pick_dest(Neighbors),
     request_min(From),
     request_max(From),
     request_average(From),
-
-    pull(Neighbors).
+    request_median(From),
+    ok.
 
 request_min(PID) ->
     PID ! #request{from=self(), field=min},
@@ -261,5 +251,32 @@ request_average(PID) ->
     PID ! #request{from=self(), field=average},
     ok.
 
+request_median(PID) ->
+    PID ! #request{from=self(), field=median},
+    ok.
+
 add_neighbor(New_Neighbor, Neighbors) ->
     [New_Neighbor|Neighbors].
+
+%% Gossip to yourself with probability 1/2
+%% Gossip to any neighbor with probability 1/(# Neighbors * 2)
+pick_dest(Neighbors) ->
+    Length = length(Neighbors),
+    Choice = 
+    if
+        Length > 0 ->
+            random:uniform(Length * 2);
+        true ->
+            0
+    end,
+
+    Dest = 
+    if 
+        Choice == 0 ->
+            self();
+        Choice > Length ->
+            self();
+        true ->
+            lists:nth(Choice, Neighbors)
+    end,
+    Dest.
