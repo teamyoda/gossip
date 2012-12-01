@@ -1,9 +1,10 @@
 -module(monitor).
 -export([start/0, execute/0, get_min/1, get_max/1, get_average/1, 
         make_neighbors/2, make_neighbors_multiple/2, make_neighbors_graph/2, 
-        step/1, create_nodes/1, get_median/1, get_fragments/1, 
+        step/1, create_nodes/1, create_nodes_remote/1,
+        get_median/1, get_fragments/1, 
         store_fragment/3, request_fragment/2, query_node_one/1, step/2,
-        create_network/1]).
+        create_network/1, create_network_remote/1]).
 
 -export([read_fragment_file/2]).
 -include("include/message.hrl").
@@ -110,9 +111,31 @@ create_nodes_helper(Number, Nodes) ->
     PID = node:start_node(Fragment),
     create_nodes_helper(Number-1, [PID|Nodes]).
 
+create_nodes_remote(Number) ->
+    create_nodes_remote_helper(Number, []).
+create_nodes_remote_helper(0, Nodes) ->
+    Nodes;
+create_nodes_remote_helper(Number, Nodes) ->
+    Fragment = generate_fragment(),
+    PID = node:start_remote_node(Fragment),
+    create_nodes_remote_helper_2(Number-1, [PID|Nodes]).
+create_nodes_remote_helper_2(0, Nodes) ->
+    Nodes;
+create_nodes_remote_helper_2(Number, Nodes) ->
+    Fragment = generate_fragment(),
+    PID = node:start_node(Fragment),
+    create_nodes_remote_helper(Number-1, [PID|Nodes]).
+
 create_network(Size) ->
     Number = generate_graph:calc_nodes(Size),
     Nodes = create_nodes(Number),
+    Graph = generate_graph:build_graph(Nodes),
+    make_neighbors_graph(Graph, Nodes),
+    Nodes.
+
+create_network_remote(Size) ->
+    Number = generate_graph:calc_nodes(Size),
+    Nodes = create_nodes_remote(Number),
     Graph = generate_graph:build_graph(Nodes),
     make_neighbors_graph(Graph, Nodes),
     Nodes.

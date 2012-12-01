@@ -1,7 +1,8 @@
 -module(node).
 -export([execute/2, 
         start_node/3, 
-        start_remote_node/3, 
+        start_remote_node/3,
+        start_remote_node/1, 
         start_node/1, 
         send_min/2, 
         send_max/2, 
@@ -28,6 +29,11 @@ start_node(Min, Max, Average) ->
 %% Start a new node on the remote system
 start_remote_node(Min, Max, Average) ->
     spawn(slave@vm2, node, execute, [[], #state{min=Min, max=Max, average=Average}]).
+
+start_remote_node(Fragment) when is_list(Fragment) ->
+    Node = spawn(slave@vm2, node, execute, [[], #state{}]),
+    Node ! #fragment{owner=Node, data=Fragment, method=store},
+    Node.
 
 %% Main execution loop
 execute(Neighbors, State) ->
