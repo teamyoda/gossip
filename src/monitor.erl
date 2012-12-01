@@ -6,6 +6,9 @@
         create_network/1]).
 
 -export([read_fragment_file/2]).
+-export([generate_fragments/1]).
+-export([create_network/2]).
+-export([get_file_stats/1]).
 -include("include/message.hrl").
 
 %% Monitor for checking the status of any gossip node
@@ -18,26 +21,46 @@ start() ->
 
 %% Ask any node what its min is
 get_min(To_PID) ->
-    To_PID ! #request{from=monitor, field=min},
-    ok.
+    To_PID ! #request{from=self(), field=min},
+    receive
+        #message{function=min, data=Value} ->
+            Value;
+        _ -> error
+    end.
 
 %% Ask any node what its max is
 get_max(To_PID) ->
-    To_PID ! #request{from=monitor, field=max},
-    ok.
+    To_PID ! #request{from=self(), field=max},
+    receive
+        #message{function=max, data=Value} ->
+            Value;
+        _ -> error
+    end.
 
 get_median(To_PID) ->
-    To_PID ! #request{from=monitor, field=median},
-    ok.
+    To_PID ! #request{from=self(), field=median},
+    receive
+        #message{function=median, data=Value} ->
+            Value;
+        _ -> error
+    end.
 
 %% Ask any node what its average is
 get_average(To_PID) ->
-    To_PID ! #request{from=monitor, field=average},
-    ok.
+    To_PID ! #request{from=self(), field=average},
+    receive
+        #message{function=average, data=Value} ->
+            Value;
+        _ -> error
+    end.
 
 get_fragments(To_PID) ->
-    To_PID ! #request{from=monitor, field=fragments},
-    ok.
+    To_PID ! #request{from=self(), field=fragments},
+    receive
+        Fragments when is_list(Fragments) ->
+            Fragments;
+        _ -> error
+    end.
 
 store_fragment(Number, Data, Nodes) when is_list(Nodes) ->
     DestNode = lists:nth(Number, Nodes),
@@ -53,8 +76,22 @@ request_fragment(Number, Nodes) when is_list(Nodes) ->
 
 query_node_one(Nodes) when is_list(Nodes) ->
     Node_1 = lists:nth(1, Nodes),
-    get_fragments(Node_1),
-    ok.
+
+    D1 = dict:new(),
+    D2 = dict:store("Min", get_min(Node_1), D1),
+    D3 = dict:store("Max", get_max(Node_1), D2),
+    D4 = dict:store("Average", get_average(Node_1), D3),
+    D5 = dict:store("Median", get_median(Node_1), D4),
+    D6 = dict:store("Fragments", get_fragments(Node_1), D5),
+
+    dict:to_list(D6).
+
+get_file_stats(File) when is_list(File) ->
+    Min = lists:min(File),
+    Max = lists:max(File),
+    Ave = node:average(File),
+    Med = node:median(File),
+    [{min, Min}, {max, Max}, {average, Ave}, {median, Med}].
 
 %% Makes nodes into  neighbors
 make_neighbors(PID_1, PID_2) ->
@@ -63,7 +100,7 @@ make_neighbors(PID_1, PID_2) ->
     ok.
 
 %% Makes a node neighbors with all nodes in a list
-make_neighbors_multiple(PID_1, []) ->
+make_neighbors_multiple(_, []) ->
     ok;
 
 make_neighbors_multiple(PID_1, [Head | Rest]) ->
@@ -71,7 +108,7 @@ make_neighbors_multiple(PID_1, [Head | Rest]) ->
     make_neighbors_multiple(PID_1, Rest).
 
 %% Assigns neighbors to each node based on a graph. Takes in the graph and the node list.
-make_neighbors_graph(Graph, []) ->
+make_neighbors_graph(_, []) ->
     ok;
 
 make_neighbors_graph(Graph, [Head | Rest]) ->
@@ -81,20 +118,29 @@ make_neighbors_graph(Graph, [Head | Rest]) ->
 
 read_fragment_file(Fname, Number) ->
     case file:open(Fname, [read, raw, binary]) of
- {ok, Fd} ->
-     case file:read(Fd, Number) of 
-        {ok, Data} ->
-            file:close(Fd),
-            Data;
-        {error, Reason} ->
-            {error, Reason}
-        end;
- {error, Reason} ->
-     {error, Reason}
+        {ok, Fd} ->
+            case file:read(Fd, Number) of 
+                {ok, Data} ->
+                    file:close(Fd),
+                    Data;
+                {error, Reason} ->
+                    {error, Reason}
+            end;
+         {error, Reason} ->
+             {error, Reason}
     end.
 
+generate_fragments(Number) ->
+    generate_fragments_helper(Number, []).
+
+generate_fragments_helper(0, Fragments) -> Fragments;
+generate_fragments_helper(Number, Fragments) ->
+    New = generate_fragment(),
+    generate_fragments_helper(Number - 1, [New | Fragments]).
+
 generate_fragment() ->
-    generate_fragment_helper(20, []).
+    Size = random:uniform(100),
+    generate_fragment_helper(Size, []).
 generate_fragment_helper(0, Fragment) ->
     Fragment;
 generate_fragment_helper(Number, Fragment) ->
@@ -102,13 +148,25 @@ generate_fragment_helper(Number, Fragment) ->
     generate_fragment_helper(Number-1, [Entry|Fragment]).
 
 create_nodes(Number) ->
-    create_nodes_helper(Number, []).
-create_nodes_helper(0, Nodes) ->
+    Fragments = generate_fragments(Number), 
+    create_nodes_helper(Number, [], Fragments).
+
+create_nodes(Number, Fragments) ->
+    create_nodes_helper(Number, [], Fragments).
+
+create_nodes_helper(0, Nodes, _) ->
     Nodes;
-create_nodes_helper(Number, Nodes) ->
-    Fragment = generate_fragment(),
-    PID = node:start_node(Fragment),
-    create_nodes_helper(Number-1, [PID|Nodes]).
+create_nodes_helper(Number, Nodes, [Head | Fragments]) ->
+    PID = node:start_node(Head),
+    create_nodes_helper(Number-1, [PID|Nodes], Fragments).
+
+create_network(Size, fragments) ->
+    Number = generate_graph:calc_nodes(Size),
+    Fragments = generate_fragments(Number),
+    Nodes = create_nodes(Number, Fragments),
+    Graph = generate_graph:build_graph(Nodes),
+    make_neighbors_graph(Graph, Nodes),
+    {Nodes, lists:append(Fragments)}.
 
 create_network(Size) ->
     Number = generate_graph:calc_nodes(Size),

@@ -6,6 +6,7 @@
         send_min/2, 
         send_max/2, 
         send_average/2, 
+        average/1,
         median/1, 
         send_fragment/2, 
         store_fragment/2, 
