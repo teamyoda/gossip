@@ -161,6 +161,15 @@ testing. These are ``monitor:create_network/1`` and ``monitor:step/2``.
 * ``monitor:get_file_stats/1`` Pass this the ``File`` from above and get back
     the actual min, max, average, and median. Use this for comparing to the 
     gossiped values.
+* ``monitor:query_node/2`` Pass this the list of nodes and a node number to 
+    pull back all the stats in a nicely parsable format.
+* ``monitor:query_node_one/1`` This is just a wrapper to get the info from
+    node one.
+* ``monitor:store_fragment/3`` Stores a fragment using gossip. Starts at node
+    one. **NOTE:** This is dependent on gossip so you must step the network
+    in order for this to work.
+* ``monitor:request_fragment/2`` Request a fragment to be stored at node one.
+    **NOTE:** This is dependent on gossip so you must step the network
 
 ##Demo
 After building just run the demo like this
