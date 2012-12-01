@@ -81,10 +81,10 @@ ease of testing than anything.
     ok
     2> Number = generate_graph:calc_nodes(10). # Get the actual number of
                                                # nodes you will need to create
-
-    3> Nodes = monitor:create_nodes(14). # Returns a list of nodes
-                                         # Nodes are pre-initialized with some
-                                         # random fragments
+    14
+    3> Nodes = monitor:create_nodes(Number). # Returns a list of nodes
+                                             # Nodes are pre-initialized with 
+                                             # some random fragments
 
     # Can now set up graph and neighbors
     4> Graph = generate_graph:build_graph(Nodes). # Returns a digraph of the nodes
