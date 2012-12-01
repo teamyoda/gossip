@@ -153,9 +153,10 @@ testing. These are ``monitor:create_network/1`` and ``monitor:step/2``.
     you to also pass the atom ``fragments``. This will pass back the network
     as above, but will also give you the file used to derive the fragments
     for the nodes. Common usage then is like this:
-
+    ```
     1> {Network, File} = monitor:create_network(100, fragments).
     ...
+    ```
 
 * ``monitor:get_file_stats/1`` Pass this the ``File`` from above and get back
     the actual min, max, average, and median. Use this for comparing to the 
