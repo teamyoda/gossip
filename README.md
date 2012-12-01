@@ -16,17 +16,26 @@ This will output the binaries to the ebin directory
 ### Simple Test
 
 To use after building run from the project directory
+    
+    $ erl -pa ebin
 
-    $ erl -pa ebin/
-    1> node:start(). # This will bring up two nodes (time-being)
-    2> node:poke(). # This is essentially a clock cycle. It prints the current
-                    # status of the calculations and sends the updated values
-                    # to all neighbors.
+    1> monitor:start().
+    <0.36.0>
+    ok
+    2> Node = node:start_node([1,2,3,4,5,6,7]).
+    <0.36.0>
+    3> monitor:step(Node).
+    ok
+    4> monitor:get_min(Node).
+    Received: {message,<0.36.0>,min,1}
+    ok
 
 ### Using the Monitor
-
 We now have a monitor pseudo-node that allows us to see what a node's status is
 and perform general debugging. See ``src/monitor.erl`` for all its exports.
+
+**NOTE:** using ``node:start_node/3`` is deprecated. Switch instead to using 
+``node:start_node/1``. This takes in a fragment as a list of numbers.
 
     $ erl -pa ebin/
 
@@ -70,25 +79,34 @@ ease of testing than anything.
 
     1> monitor:start().
     ok
-    2> Nodes = monitor:create_nodes(14). # Returns a list of nodes
-                                        # Nodes are pre-initialized with some
-                                        # random fragments
-                                        # only works for certain numbers of nodes...
+    2> Number = generate_graph:calc_nodes(10). # Get the actual number of
+                                               # nodes you will need to create
 
-    3> # Can now set up graph and neighbors
-    4> Graph1 = generate_graph:build_graph(Nodes). # Returns a digraph of the nodes
-    5> monitor:make_neighbors_graph(Graph1,Nodes). # Assigns neighbors to all nodes based on the graph
-    6> # Can now step through network and monitor nodes attributes
+    3> Nodes = monitor:create_nodes(14). # Returns a list of nodes
+                                         # Nodes are pre-initialized with some
+                                         # random fragments
+
+    # Can now set up graph and neighbors
+    4> Graph = generate_graph:build_graph(Nodes). # Returns a digraph of the nodes
+
+    # Assign neighbors to all nodes based on the graph
+    5> monitor:make_neighbors_graph(Graph,Nodes). 
+    ok
+    # Can now step through network and monitor nodes attributes
 
 ### Spawning Remote Nodes
-Additional setup to your environment is required before you can spawn nodes on a remote system. First create 2 VMs as described in project 1. Add these lines to the /etc/hosts file in both VMs:
+Additional setup to your environment is required before you can spawn nodes 
+on a remote system. First create 2 VMs as described in project 1. Add these 
+lines to the /etc/hosts file in both VMs:
 
     192.168.0.101	vm1
     192.168.0.102	vm2
 
-Make sure to download and build this code on both VMs. The rest of the setup is similar to this tutorial: http://learnyousomeerlang.com/distribunomicon
+Make sure to download and build this code on both VMs. The rest of the setup 
+is similar to this tutorial: http://learnyousomeerlang.com/distribunomicon
 
-When starting the erlang shell on each vm you need to add additional tags. Start erlang on vm1 like this:
+When starting the erlang shell on each vm you need to add additional tags. 
+Start erlang on vm1 like this:
 
     erl -pa ebin/ -sname master@vm1 -setcookie sync
 
@@ -100,4 +118,24 @@ Finally, before doing anything else, run this command on vm1 in the erlang shell
 
     1> net_kernel:connect(slave@vm2).
 
-If it returns true then you are good to go. Run all commands from within the erlang shell on vm1. Now you can run ``node:start_remote_node/3`` to spawn a node that runs on vm2. Notice that it will have a non-zero value for the first part of it's PID, indicating it is running remotely. You can interact with it exactly as you would a local node.
+If it returns true then you are good to go. Run all commands from within the 
+erlang shell on vm1. Now you can run ``node:start_remote_node/3`` to spawn a 
+node that runs on vm2. Notice that it will have a non-zero value for the first 
+part of it's PID, indicating it is running remotely. You can interact with it 
+exactly as you would a local node.
+
+### REALLY quick network creation
+There now exist two helper functions to really speed up network creation and 
+testing. These are ``monitor:create_network/1`` and ``monitor:step/2``. 
+
+    Eshell V5.8.5  (abort with ^G)
+    1> Nodes = monitor:create_network(10). # Create a network with ~10 nodes
+    [<0.47.0>,<0.46.0>,<0.45.0>,<0.44.0>,<0.43.0>,<0.42.0>,
+    <0.41.0>,<0.40.0>,<0.39.0>,<0.38.0>,<0.37.0>,<0.36.0>,
+    <0.35.0>,<0.34.0>]
+    2> monitor:start(). # Start the monitor
+    ok
+    3> monitor:step(Nodes, 100). # Have the nodes do 100 gossip rounds
+    ok
+
+
