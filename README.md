@@ -138,4 +138,33 @@ testing. These are ``monitor:create_network/1`` and ``monitor:step/2``.
     3> monitor:step(Nodes, 100). # Have the nodes do 100 gossip rounds
     ok
 
+### Cool helper functions
+* ``monitor:get_min/1`` Pass it a node PID and it will return the node's min
+* ``monitor:get_max/1`` Pass it a node PID and it will return the node's max
+* ``monitor:get_average/1`` Pass it a node PID and it will return the node's 
+    average
+* ``monitor:get_median/1`` Pass it a node PID and it will return the node's 
+    median
+* ``monitor:get_fragments/1`` Pass it a node PID and it will return the all 
+    fragments stored by the node
+* ``monitor:create_network/1`` Pass it a number and it will create a network
+    with at least that many nodes. It will pass back a list of the nodes.
+* ``monitor:create_network/2`` Similar to ``create_network/1`` but it allows
+    you to also pass the atom ``fragments``. This will pass back the network
+    as above, but will also give you the file used to derive the fragments
+    for the nodes. Common usage then is like this:
 
+    1> {Network, File} = monitor:create_network(100, fragments).
+    ...
+
+* ``monitor:get_file_stats/1`` Pass this the ``File`` from above and get back
+    the actual min, max, average, and median. Use this for comparing to the 
+    gossiped values.
+
+##Demo
+After building just run the demo like this
+
+    1> demo:run().
+
+This will create a network of 10,000+ nodes and run 200 gossip rounds. It
+then prints the actual values so you can compare them to the gossip values.
