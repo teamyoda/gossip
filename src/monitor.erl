@@ -1,5 +1,5 @@
 -module(monitor).
--export([start/0, execute/0, get_min/1, get_max/1, get_average/1, 
+-export([start/0, get_min/1, get_max/1, get_average/1, 
         make_neighbors/2, make_neighbors_multiple/2, make_neighbors_graph/2, 
         step/1, create_nodes/1, create_nodes_remote/1,
         get_median/1, get_fragments/1, 
@@ -14,10 +14,7 @@
 
 %% Monitor for checking the status of any gossip node
 
-%% Start the monitor
 start() ->
-    Monitor = spawn(monitor, execute, []),
-    register(monitor, Monitor),
     ok.
 
 %% Ask any node what its min is
@@ -210,14 +207,4 @@ step(Nodes, Number) ->
     timer:sleep(1),
     step(Nodes),
     step(Nodes, Number - 1).
-
-execute() ->
-    receive
-        kill ->
-            exit(normal);
-
-        Data ->
-            io:format("Received: ~p~n", [Data]),
-            execute()
-    end.
 

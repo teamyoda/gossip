@@ -19,7 +19,7 @@ To use after building run from the project directory
     
     $ erl -pa ebin
 
-    1> monitor:start().
+    1> monitor:start(). # Don't need this any more
     <0.36.0>
     ok
     2> Node = node:start_node([1,2,3,4,5,6,7]).
@@ -39,7 +39,7 @@ and perform general debugging. See ``src/monitor.erl`` for all its exports.
 
     $ erl -pa ebin/
 
-    1> monitor:start().
+    1> monitor:start(). # Don't need this any more
     ok
     2> Node_1 = node:start_node(1,2,3).
     <0.36.0>
@@ -77,7 +77,7 @@ The ``monitor:create_nodes/1`` function allows you to quickly create a list of
 nodes. All nodes are initialized with a random fragment, so this is more for
 ease of testing than anything.
 
-    1> monitor:start().
+    1> monitor:start(). # Don't need this any more
     ok
     2> Number = generate_graph:calc_nodes(10). # Get the actual number of
                                                # nodes you will need to create
@@ -133,7 +133,7 @@ testing. These are ``monitor:create_network/1`` and ``monitor:step/2``.
     [<0.47.0>,<0.46.0>,<0.45.0>,<0.44.0>,<0.43.0>,<0.42.0>,
     <0.41.0>,<0.40.0>,<0.39.0>,<0.38.0>,<0.37.0>,<0.36.0>,
     <0.35.0>,<0.34.0>]
-    2> monitor:start(). # Start the monitor
+    2> monitor:start(). # Start the monitor, don't need this any more
     ok
     3> monitor:step(Nodes, 100). # Have the nodes do 100 gossip rounds
     ok
