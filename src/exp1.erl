@@ -1,5 +1,6 @@
 -module(exp1).
--export([run/0]).
+-export([run_experiment/0]).
+-export([run/3]).
 -export([ceiling/1]).
 
 ceiling(X) when X < 0 ->
@@ -11,13 +12,13 @@ ceiling(X) ->
         false -> T + 1
 end.
 
-run() ->
+run(NumNodes, NumRounds, FileName) ->
     io:format("Starting monitor~n"),
-    {Network, File} = monitor:create_network(10000, fragments),
+    {Network, File} = monitor:create_network(NumNodes, fragments),
     io:format("Created network of ~p nodes~n", [length(Network)]),
     io:format("Will now run at most 1000 rounds~n"),
-    {ok, FileDescriptor} = file:open("exp1.txt", [write]), 
-    looper(FileDescriptor, Network, 0, 200),
+    {ok, FileDescriptor} = file:open(FileName, [write]), 
+    looper(FileDescriptor, Network, 0, NumRounds),
     FileInfo = monitor:get_file_stats(File),
     file:close(FileDescriptor),
     io:format("Actual values are:~n~p~n", [FileInfo]).
@@ -42,6 +43,13 @@ dump_to_file(FileDescriptor, Rounds, Node, Results) ->
 looper(_, _, Rounds, MaxRounds) when Rounds > MaxRounds -> ok;
 looper(FileDescriptor, Network, Rounds, MaxRounds) ->
     monitor:step(Network),
-    dump_nodes(Network, FileDescriptor, Rounds),
+    case Rounds rem 10 == 0 of
+        true ->
+            dump_nodes(Network, FileDescriptor, Rounds);
+        false-> false
+    end,
     timer:sleep(1),
     looper(FileDescriptor, Network, Rounds + 1, MaxRounds).
+
+run_experiment() ->
+    run(10000, 200, "10k200.txt").
