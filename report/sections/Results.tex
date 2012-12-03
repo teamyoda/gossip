@@ -1,0 +1,31 @@
+\section{Results}
+\subsection{Min, Max, Avg, Med}
+We had to determine whether the basic functionality of the system was working. We did this by continually testing the system during implementation. Here we present the proof that our system functions correctly and satisfies specification two and three by showing the results of ten runs of the four mathematical calculations specified in the assignment description. This experiment was conducted with a 10,000 (fake number, replace with actual number) node network. The results of each run and the average of all the runs fall within the target delta of less than or equal to 3\%.
+
+%[insert table showing actual values + 10 runs + % error]
+
+To satisfy system specification’s first requirement, we show that our system can successfully compute the minimum and maximum and store them at node 1. This calculation was performed ten times with a 10,000 node network.
+
+%[insert table showing actual values + 10 runs + % error]
+
+\subsection{Fragments}
+We also show proof that 4th and 5th requirements are fulfilled by running examples of updating and retrieving fragment data. A network of 16,382 nodes was created and fragments were initialized at each node with pseudo-random data. An arbitrary fragment number was chosen to be updated. The system was passed a new set of data for the fragment to be stored at the destination nodes containing the fragment. The update started at node 1 and the number of gossip rounds needed to store the fragment was recorded. Out of 100 trials it took an average of 896 rounds of gossip to store the fragment.
+
+Retrieving fragment data was tested on the same network. Data from an arbitrary fragment was requested from node 1. The number of gossip rounds it took to retrieve the fragment was recorded. Out of 100 trials it took an average of 529 rounds of gossip to retrieve the fragment.
+
+\subsection{Other experiments}
+After verifying the correctness of the system, we wanted to conduct a few experiments to figure out some quantitative characteristics of the system.
+
+First, we wanted to know if we could estimate the rate of convergence for each mathematical operation. To do this, we designed an experiment where we varied the number of nodes in the network and recorded the time to convergence for every operation. One can see that there is a definite relationship between the number of nodes and time to convergence. There is also a difference in time to convergence between the different operations. This is not surprising since some of the operations use more communication that others. OR NOT! change depending on experimental results
+%[Plot N vs. time to converge. ]
+
+Question:
+Not sure about this experiment.
+Does starting a gossip at one end of the network and starting a gossip at a random change the time to converge?
+Experiment:
+Create a network of size N. Start a gossip at a root node. Record time to converge (TTC). Repeat this several time (10, 20?). Start a gossip at a random, non-root node. Record TTC and repeat experiment several times. Compare root node TTC and random node TTC. If they different by a large enough delta, where the gossip starts does affect TTC.
+
+Question:
+What does the error look like while gossip is happening?
+Experiment:
+Start a gossip and record the error each iteration. Graph time vs error. 

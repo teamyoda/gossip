@@ -8,24 +8,24 @@ RM =rm -f
 all: paper tidy
 
 tidy:
-    $(RM) *.log
-    $(RM) *.aux
-    $(RM) *.bbl
-    $(RM) *.blg
-    $(RM) *.dvi
-    $(RM) *.out
+	$(RM) *.log
+	$(RM) *.aux
+	$(RM) *.bbl
+	$(RM) *.blg
+	$(RM) *.dvi
+	$(RM) *.out
 
 clean: tidy
-    $(RM) $(PDF)/*.pdf
-    $(RM) *.toc
-    $(RM) *.lof
-    $(RM) *.lot
+	$(RM) $(PDF)/*.pdf
+	$(RM) *.toc
+	$(RM) *.lof
+	$(RM) *.lot
 
 show: clean all
-    gnome-open $(PDF)/$(FILE).pdf
+	gnome-open $(PDF)/$(FILE).pdf
 
 
 paper: $(FILE).tex
-    $(PDFLATEX) $(FILE)
-    mv $(FILE).pdf $(PDF)
+	$(PDFLATEX) $(FILE)
+	mv $(FILE).pdf $(PDF)
 
