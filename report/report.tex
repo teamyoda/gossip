@@ -1,0 +1,30 @@
+% Example LaTeX document
+\documentclass[a4paper,12pt]{article}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{colortbl}
+
+\begin{document}
+\title{Title of my paper}
+\author{Ben Anglin, Stanislav Bobovych, Ashley Burke, Nick McCloskey}
+\maketitle
+
+%% Graphics Path
+%% =============
+\graphicspath{{./images/}}
+
+%\input{definitions}
+%\input{sections/Introduction}
+\input{sections/Background}
+%\input{sections/Methodology}
+%\input{sections/Results}
+%\input{sections/Conclusion}
+%\input{sections/Future_Work}
+%\input{sections/Appendix}
+\cite{massasati:159}
+
+\bibliographystyle{plain}
+\bibliography{bibtex/paper}
+
+\end{document}
+
