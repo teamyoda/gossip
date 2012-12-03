@@ -1,0 +1,9 @@
+1> exp1:run_experiment().
+Starting monitor
+Created network of 16382 nodes
+Will now run at most 200 rounds
+Actual values are:
+[{min,1},{max,1000},{average,500.0784737903888},{median,499}]
+Rounds, Node, Min, Average, Median, Max, MinError, AvgError, MedError, MaxError
+ok
+

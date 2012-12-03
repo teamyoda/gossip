@@ -1,0 +1,11 @@
+1> demo:run_comms().
+Begining comms test
+Created network of 16382 nodes
+Will now store fragment [1,2,3,4,5,6] at node 7355
+Found it!
+It took 83 gossip rounds to store this fragment
+Now requesting same fragment back from node 7355
+Found it!
+It took 131 gossip rounds to receive the fragment at node 1
+ok
+

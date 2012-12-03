@@ -1,0 +1,60 @@
+1> exp4:run_experiment().
+
+
+This experiment tests task 4 of the assignment. It will show the fragments stored at node 10 to show the initial value of fragment 10. The store_fragment function will be run to update the data stored in fragment 10 at node 1, and 200 rounds of gossip will run. The fragments stored at node 10 will be shown again to show that fragment 10 now stores the updated data value.
+
+%% Starting monitor
+%% Creating netowork with 1000 nodes
+%% Fragment 10 has ID <0.1046.0>
+
+//////////////////////
+
+%% Showing fragments currently stored at node 10
+[{fragment,<0.1046.0>,undefined,undefined,
+           [522,896,617,253,686,384,325,307,172,43,47,11,351,463,583,29,373,
+            561,184,295,519,722,521,813,545,694,372,405,815,32,950,441,61,852,
+            238,498,229,453,957,259,949,753,883,822,884,90,397,881,606,134,
+            766,246,638,309,97,796,378,317,611],
+           store},
+ {fragment,<0.1051.0>,<0.1051.0>,undefined,
+           [43,474,204,770,520,490,414,952,220,940,246,165,318,820,423,237,
+            206,303,605,235,204,278,795,63,412,215,889,409,860,343,205,574,
+            986,674,183,402,761,779,696,854,478,543,957,718,240,613,547,550,
+            558,929,502,505,716,522,921,664,852,593,216,173,916,655,607],
+           replicate},
+ {fragment,<0.1035.0>,<0.1035.0>,undefined,[993,621],replicate},
+ {fragment,<0.1036.0>,<0.1036.0>,undefined,
+           [820,438,498,337,570,808,198,133,121,410,695,815,340,426,885,375,
+            530,275,64,320,598,798,627,886,40,996,605,449,590,377,887,408,203,
+            205,398,509,744,732,814,602,317,583,193,401,356,985,513,9,802,431,
+            593,359,368,109,837,999,478,191,226,908,473,859,620],
+           replicate}]
+
+%% Notice the value of fragment 10 (fragment ID <0.1046.0>)
+
+//////////////////////
+
+%% Updating contents of fragment 10 as [1,2,3,4,5,6] to be stored at node 1
+%% Stepping through 200 steps of gossip
+
+//////////////////////
+
+%% Showing fragments now stored at node 10
+[{fragment,<0.1046.0>,<0.1051.0>,undefined,[1,2,3,4,5,6],store},
+ {fragment,<0.1051.0>,<0.1051.0>,undefined,
+           [43,474,204,770,520,490,414,952,220,940,246,165,318,820,423,237,
+            206,303,605,235,204,278,795,63,412,215,889,409,860,343,205,574,
+            986,674,183,402,761,779,696,854,478,543,957,718,240,613,547,550,
+            558,929,502,505,716,522,921,664,852,593,216,173,916,655,607],
+           replicate},
+ {fragment,<0.1035.0>,<0.1035.0>,undefined,[993,621],replicate},
+ {fragment,<0.1036.0>,<0.1036.0>,undefined,
+           [820,438,498,337,570,808,198,133,121,410,695,815,340,426,885,375,
+            530,275,64,320,598,798,627,886,40,996,605,449,590,377,887,408,203,
+            205,398,509,744,732,814,602,317,583,193,401,356,985,513,9,802,431,
+            593,359,368,109,837,999,478,191,226,908,473,859,620],
+           replicate}]
+
+%% Notice fragment 10 (fragment ID <0.1046.0>) is updated with the new data
+ok
+
