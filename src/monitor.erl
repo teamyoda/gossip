@@ -279,11 +279,13 @@ generate_fragments_helper(Number, Fragments) ->
 %%      A list of random length and random numbers
 generate_fragment() ->
     Size = random:uniform(100),
+    {B1, B2, B3} = now(),
+    random:seed(B1, B2, B3),
     generate_fragment_helper(Size, []).
 generate_fragment_helper(0, Fragment) ->
     Fragment;
 generate_fragment_helper(Number, Fragment) ->
-    Entry = random:uniform(100),
+    Entry = random:uniform(1000),
     generate_fragment_helper(Number-1, [Entry|Fragment]).
 
 %% Create a list of gossip nodes. Each node is given a random fragment.
