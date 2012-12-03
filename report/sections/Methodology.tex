@@ -1,29 +1,49 @@
 \section{Methodology}
 \subsection{Node Design and Functionality}
+Our implementation consists of two basic units, the node and the monitor. A node is responsible for computation and communication with other nodes. The communication uses a message passing paradigm. The monitor is responsible for controlling the simulation, user interaction and debugging.
 
-
-Each node follows the basic rules of gossip. That is, on every round a node will gossip to itself with probability ½ or with any one of its neighbors with probability $1/(\textrm{Number of neighbors} * 2)$. Our implementation conducts both push and pull once per gossip round. In addition to the push and pull cycle, each node will simultaneously update its local values. Unlike most example implementations, our nodes conduct all calculations simultaneously.
-Nodes are first initialized with a fragment of any size. Upon initialization, the node runs local calculations for minimum, maximum, average, and median values. Once this is complete, the node will also replicate its fragment to its neighbors. All nodes are responsible for a single fragment, but may store any number of fragments as replicas or while passing fragments over the network. When a node receives a new fragment to own, it will reinitialize itself and replicate the new fragment. It is important to note that since each node is responsible for a single fragment, the fragment’s “number” is synonymous with the process ID of it’s owner node. We do tend to map actual numbers on top of the node process IDs, but this is as a matter of convenience.
+Each node follows the basic rules of gossip. That is, on every round a node will gossip to itself with probability 1/2 or with any one of its neighbors with probability $1/(\textrm{Number of neighbors} * 2)$. Our implementation conducts both push and pull once per gossip round. In addition to the push and pull cycle, each node will simultaneously update its local values. Unlike most example implementations, our nodes conduct all calculations simultaneously.
+Nodes are first initialized with a fragment of any size. Upon initialization, the node runs local calculations for minimum, maximum, average, and median values. Once this is complete, the node will also replicate its fragment to its neighbors. All nodes are responsible for a single fragment, but may store any number of fragments as replicas or while passing fragments over the network. When a node receives a new fragment to own, it will reinitialize itself and replicate the new fragment. It is important to note that since each node is responsible for a single fragment, the fragment's “number” is synonymous with the process ID of it's owner node. We do tend to map actual numbers on top of the node process IDs, but this is as a matter of convenience.
 
 Once a node is done with its initialization, it is ready to gossip. Our implementation requires all nodes to wait for a “step” signal to be sent before executing each round. This allows us to precisely measure the number of rounds executed and gives us excellent control over the network as a whole.
 
 On each gossip round, all nodes push and pull their local values with their neighbors. Once a node receives new data for any calculation (remember, we do all calculations simultaneously), it will update its local data according to the data received.
 
-For calculating the minimum and maximum values, a simple min/max comparison of the node’s current value with the received value is sufficient. Calculating the average is similarly trivial as it is a well documented process of dividing the sum of the current and new average values by two.
+For calculating the minimum and maximum values, a simple min/max comparison of the node's current value with the received value is sufficient. Calculating the average is similarly trivial as it is a well documented process of dividing the sum of the current and new average values by two.
 
-[Insert min, max, and average formulas here in latex]
-\begin{equation}
+\begin{equation*}
+Max(x_i) = \left\{
+  \begin{array}{l l}
+    x_i & \quad \textrm{if $x_i \geq x_j$}\\
+    x_j & \quad \textrm{else}\\
+  \end{array} \right.
+\end{equation*}
+
+\begin{equation*}
+Min(x_i) = \left\{
+  \begin{array}{l l}
+    x_i & \quad \textrm{if $x_i \leq x_j$}\\
+    x_j & \quad \textrm{else}\\
+  \end{array} \right.
+\end{equation*}
+
+\begin{equation*}
 Avg(x_i)=\frac{x_i + x_j}{2}
-\end{equation}
+\end{equation*}
+
 
 
 Calculating the median can be approached from many angles. Attempting to find the “median of medians” by recording each median value received was considered. However, this approach essentially requires a node to have knowledge of global state. Recording the most frequent numbers and finding their median was also considered, but again it would be vastly skewed over the whole of the network. Finally, a method similar to averaging was used, where the current median is added to the new median and the sum is divided by two. This was motivated by the method for finding the median in a set of even size.
 
-[Insert formula for median here in latex]
+\begin{equation*}
+Med(x_i)=\frac{x_{i\_new} + x_{i\_old}}{2}
+\end{equation*}
 
-Fragment handling is best examined in two phases. First, each node is the owner of but one fragment. The node will use its fragment for initialization as discussed, but after this is done the node’s duty becomes serving up and updating the fragment. When a node receives a request to store a fragment, it first checks to see if it is the owner of the fragment by looking at the PID assigned to be the owner of the fragment. Remember, our implementation uses PIDs as the actual fragment numbers. If the node owns the fragment, it will replace its current fragment with the new one and reinitialize itself. If a node does not own the fragment it will gossip the fragment along.
+Fragment handling is best examined in two phases. First, each node is the owner of but one fragment. The node will use its fragment for initialization as discussed, but after this is done the node's duty becomes serving up and updating the fragment. When a node receives a request to store a fragment, it first checks to see if it is the owner of the fragment by looking at the PID assigned to be the owner of the fragment. Remember, our implementation uses PIDs as the actual fragment numbers. If the node owns the fragment, it will replace its current fragment with the new one and reinitialize itself. If a node does not own the fragment it will gossip the fragment along.
 
-When a request for a fragment is issued the following occurs. First, the node checks the request to see if it has the requested fragment. If it doesn’t, the node will change the sender field of the request to its own PID and gossip the request on. If it does have the fragment, the node will send it back to the sender of the request. Note that this may not be the originator of the request. When a node issues a request, it sets a special field that indicates which node issued the request. This field does not affect the transmission directly, rather it allows a node to see if the reply is intended for it. If a node gets a reply that is intended for it then it will store the fragment, otherwise it will gossip the fragment reply on.
+
+
+When a request for a fragment is issued the following occurs. First, the node checks the request to see if it has the requested fragment. If it doesn't, the node will change the sender field of the request to its own PID and gossip the request on. If it does have the fragment, the node will send it back to the sender of the request. Note that this may not be the originator of the request. When a node issues a request, it sets a special field that indicates which node issued the request. This field does not affect the transmission directly, rather it allows a node to see if the reply is intended for it. If a node gets a reply that is intended for it then it will store the fragment, otherwise it will gossip the fragment reply on.
 
 The second phase of fragment handling is replication. When a node receives a fragment to own, the node will replicate the fragment to its neighbors. Each node then maintains a list of fragments in addition to the fragment it owns. For example, if all nodes have three neighbors, all the nodes will actually hold four fragments – its own plus the replicas of the three neighbors.
 
@@ -42,7 +62,7 @@ from every node to any other nodes. Also, nodes can talk to themselves which mak
 \label{overflow}
 \end{figure}
 
-Our network is not double stochastic, which will affect its conductance. The conductance will not be as high as a regular graphs, but will be good enough for our experiment. We still expect convergence to happen. We research matrix normalization techniques such as Richard Sinkhorn’s theorem for making a matrix for finding a doubly stochastic matrix from a square matrix and diagonal matrices, but chose not to implement it in our design.
+Our network is not double stochastic, which will affect its conductance. The conductance will not be as high as a regular graphs, but will be good enough for our experiment. We still expect convergence to happen. We research matrix normalization techniques such as Richard Sinkhorn's theorem for making a matrix for finding a doubly stochastic matrix from a square matrix and diagonal matrices, but chose not to implement it in our design.
 Network construction was implemented in a library. First the user supplies a number of desired nodes and gets back the number of nodes in the network. With this information, the user spawns that number of nodes and records their PIDs in a list. Finally, the user supplies this list to a function that creates the digraphs and joins them, returning to the user a final digraph. A few helper methods are also present in this library. The most important is the get\_neighbor methods. The user can supply the digraph of the network and a PID and return get a list of the neighbors of this node. 
 
 \subsection{Convergence}

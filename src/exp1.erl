@@ -13,14 +13,14 @@ ceiling(X) ->
 end.
 
 calc_error(Value, EstValue) ->
-    io:format("~p ~p \n", [Value, EstValue]),
-    (Value - EstValue) / Value.
+    %io:format("~p ~p \n", [Value, EstValue]),
+    100*(Value - EstValue) / Value.
 
 run(NumNodes, NumRounds, FileName) ->
     io:format("Starting monitor~n"),
     {Network, File} = monitor:create_network(NumNodes, fragments),
     io:format("Created network of ~p nodes~n", [length(Network)]),
-    io:format("Will now run at most 1000 rounds~n"),
+    io:format("Will now run at most ~p rounds~n"[NumRounds]),
     {ok, FileDescriptor} = file:open(FileName, [write]), 
     FileInfo = monitor:get_file_stats(File),
     io:format("Actual values are:~n~p~n", [FileInfo]),
@@ -46,7 +46,7 @@ dump_to_file(FileDescriptor, Rounds, FileInfo, Node, Results) ->
     MaxError = calc_error(element(2,Max), element(2, lists:nth(2, FileInfo))),
     AvgError = calc_error(element(2,Average), element(2, lists:nth(3, FileInfo))),
     MedianError = calc_error(element(2, Median), element(2, lists:nth(4, FileInfo))),
-    io:format(FileDescriptor, "~p, ~p, ~p, ~p, ~p, ~p , ~p, ~p, ~p, ~p\n", [Rounds, Node, element(2, Min), element(2, Average), element(2, Median), element(2, Max),
+    io:format(FileDescriptor, "~p, ~p, ~p, ~p, ~p, ~p, ~p, ~p, ~p, ~p\n", [Rounds, Node, element(2, Min), element(2, Average), element(2, Median), element(2, Max),
                                                                                             MinError, AvgError, MedianError, MaxError]),
     ok.
 
@@ -62,4 +62,5 @@ looper(FileDescriptor, Network, FileInfo, Rounds, MaxRounds) ->
     looper(FileDescriptor, Network, FileInfo, Rounds + 1, MaxRounds).
 
 run_experiment() ->
-    run(10000, 200, "10k200.txt").
+    random:seed(erlang:now()),
+    run(10000, 300, "10k200.txt").
