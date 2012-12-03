@@ -172,9 +172,25 @@ testing. These are ``monitor:create_network/1`` and ``monitor:step/2``.
     **NOTE:** This is dependent on gossip so you must step the network
 
 ##Demo
-After building just run the demo like this
+After building just run the demos like this:
 
-    1> demo:run().
+    1> demo:run_calc().
 
 This will create a network of 10,000+ nodes and run 200 gossip rounds. It
 then prints the actual values so you can compare them to the gossip values.
+
+    2> demo:run_comms().
+
+This will create a network of 10,000+ nodes and store a new value [1,2,3,4,5,6] at a random node. It will step through several rounds of gossip until the destination node is updated then print the number of rounds required. It will then request the value of the fragment and run through several more rounds of gossip, eventually printing out the number of rounds required to receive the fragment.
+
+    3> exp1:run_experiment().
+
+This demonstrates Tasks 1, 2 and 3 by proving the correctness of the min, max, avg, med calculations using gossip. 
+
+    4> exp4:run_experiment().
+
+This experiment tests task 4 of the assignment. It will show the fragments stored at node 10 to show the initial value of fragment 10. The store_fragment function will be run to update the data stored in fragment 10 at node 1, and 200 rounds of gossip will run. The fragments stored at node 10 will be shown again to show that fragment 10 now stores the updated data value.
+
+    5> exp5:run_experiment().
+
+This experiment tests task 5 of the assignment. It will show the fragments stored at node 1 and node 10 to show that node 1 does not initially contain fragment 10. Fragment 10 will be requested and 200 rounds of gossip will run. The fragments now stored at node 1 will be printed to prove it now stores fragment 10.
