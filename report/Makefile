@@ -27,5 +27,6 @@ show: clean all
 
 paper: $(FILE).tex
 	$(PDFLATEX) $(FILE)
+	$(PDFLATEX) $(FILE)
 	mv $(FILE).pdf $(PDF)
 

@@ -20,13 +20,17 @@ run(NumNodes, NumRounds, FileName) ->
     io:format("Starting monitor~n"),
     {Network, File} = monitor:create_network(NumNodes, fragments),
     io:format("Created network of ~p nodes~n", [length(Network)]),
-    io:format("Will now run at most ~p rounds~n"[NumRounds]),
+    io:format("Will now run at most ~p rounds~n", [NumRounds]),
     {ok, FileDescriptor} = file:open(FileName, [write]), 
     FileInfo = monitor:get_file_stats(File),
     io:format("Actual values are:~n~p~n", [FileInfo]),
     io:format("Rounds, Node, Min, Average, Median, Max, MinError, AvgError, MedError, MaxError\n"),
     looper(FileDescriptor, Network, FileInfo, 0, NumRounds),
-    file:close(FileDescriptor).
+    file:close(FileDescriptor),
+    % record actual numbers to file
+    {ok, FD} = file:open("Exp1.log", [append]),
+    io:format(FD, "~p,~w~n", [FileName, FileInfo]),
+    file:close(FD).
 
 dump_nodes(FileDescriptor, Network, FileInfo, Rounds) ->
     lists:foreach(
@@ -53,7 +57,7 @@ dump_to_file(FileDescriptor, Rounds, FileInfo, Node, Results) ->
 looper(_, _, _, Rounds, MaxRounds) when Rounds > MaxRounds -> ok;
 looper(FileDescriptor, Network, FileInfo, Rounds, MaxRounds) ->
     monitor:step(Network),
-    case Rounds rem 10 == 0 of
+    case Rounds rem 50 == 0 of
         true ->
             dump_nodes(FileDescriptor, Network, FileInfo, Rounds);
         false-> false
@@ -63,4 +67,6 @@ looper(FileDescriptor, Network, FileInfo, Rounds, MaxRounds) ->
 
 run_experiment() ->
     random:seed(erlang:now()),
-    run(10000, 300, "10k200.txt").
+    Nodes = 10000,
+    Rounds = 200,
+    run(Nodes, Rounds, "10k200_a.csv").
